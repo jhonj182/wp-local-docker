@@ -1,0 +1,63 @@
+services:
+  traefik:
+    image: traefik:v3
+    container_name: wp-traefik
+    restart: unless-stopped
+    command:
+      - "--providers.docker=true"
+      - "--providers.docker.exposedbydefault=false"
+      - "--entrypoints.web.address=:80"
+    ports:
+      - "80:80"
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+    networks:
+      - wp-network
+
+  db:
+    image: mariadb:11
+    container_name: wp-mariadb
+    restart: unless-stopped
+    environment:
+      MYSQL_ROOT_PASSWORD: wp_root_secret_2024
+    volumes:
+      - mariadb_data:/var/lib/mysql
+    # Descomenta las siguientes líneas si quieres exponer MariaDB externamente
+    # (solo si no tienes MariaDB/MySQL corriendo localmente en el puerto 3306)
+    # ports:
+    #   - "3306:3306"
+    networks:
+      - wp-network
+    healthcheck:
+      test: ["CMD", "healthcheck.sh", "--connect", "--innodb_initialized"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  phpmyadmin:
+    image: phpmyadmin:latest
+    container_name: wp-phpmyadmin
+    restart: unless-stopped
+    environment:
+      PMA_HOST: wp-mariadb
+      PMA_PORT: 3306
+      UPLOAD_LIMIT: 256M
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.phpmyadmin.rule=Host(`pma.test`)"
+      - "traefik.http.routers.phpmyadmin.entrypoints=web"
+      - "traefik.http.services.phpmyadmin.loadbalancer.server.port=80"
+    networks:
+      - wp-network
+    depends_on:
+      db:
+        condition: service_healthy
+
+volumes:
+  mariadb_data:
+    name: wp_shared_mariadb_data
+
+networks:
+  wp-network:
+    name: wp-network
+    driver: bridge

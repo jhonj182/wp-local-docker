@@ -1,0 +1,47 @@
+#!/bin/bash
+
+CYAN='\033[0;36m'
+GREEN='\033[0;32m'
+YELLOW='\033[1;33m'
+DIM='\033[2m'
+NC='\033[0m'
+
+echo ""
+echo -e "${CYAN}📋 Sitios WordPress locales${NC}"
+echo -e "${DIM}─────────────────────────────────────────────${NC}"
+
+if [ ! -d "$HOME/wp-sites" ]; then
+    echo "  No hay sitios creados."
+    exit 0
+fi
+
+found=0
+for site_dir in "$HOME/wp-sites"/*/; do
+    [ -f "$site_dir/docker-compose.yml" ] || continue
+    # Excluir el directorio base (tiene el servicio traefik:)
+    grep -q "^  traefik:" "$site_dir/docker-compose.yml" 2>/dev/null && continue
+
+    site_name=$(basename "$site_dir")
+    found=1
+
+    if docker ps --format '{{.Names}}' | grep -q "wp-${site_name}$"; then
+        status="${GREEN}● corriendo${NC}"
+    else
+        status="${YELLOW}○ detenido${NC}"
+    fi
+
+    # Leer info de DB
+    db_name="wp_${site_name//-/_}"
+
+    echo -e "  ${status}  ${CYAN}http://${site_name}.test${NC}"
+    echo -e "            DB: ${DIM}${db_name}${NC}  📁 ${DIM}${site_dir}wp-content/${NC}"
+    echo ""
+done
+
+if [ "$found" -eq 0 ]; then
+    echo "  No hay sitios creados. Usa: wp_install nombre-sitio"
+fi
+
+echo -e "${DIM}─────────────────────────────────────────────${NC}"
+echo -e "  🗄️  phpMyAdmin: ${CYAN}http://pma.test${NC} ${DIM}(root / wp_root_secret_2024)${NC}"
+echo ""
