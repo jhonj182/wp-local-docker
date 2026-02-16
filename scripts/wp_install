@@ -70,9 +70,9 @@ docker exec wp-mariadb mariadb -uroot -p"${DB_ROOT_PASSWORD}" -e "
 "
 
 # Crear directorio del sitio
-mkdir -p "$SITE_DIR/wp-content"
+mkdir -p "$SITE_DIR/wordpress"
 
-# Crear docker-compose.yml del sitio
+# Crear docker-compose.yml del sitio (WordPress completo montado en ./wordpress)
 cat > "$SITE_DIR/docker-compose.yml" <<COMPOSE
 services:
   wordpress:
@@ -85,8 +85,7 @@ services:
       WORDPRESS_DB_PASSWORD: ${DB_PASSWORD}
       WORDPRESS_DB_NAME: ${DB_NAME}
     volumes:
-      - wp_data:/var/www/html
-      - ./wp-content:/var/www/html/wp-content
+      - ./wordpress:/var/www/html
     labels:
       - "traefik.enable=true"
       - "traefik.http.routers.${SITE_NAME}.rule=Host(\`${DOMAIN}\`)"
@@ -94,10 +93,6 @@ services:
       - "traefik.http.services.${SITE_NAME}.loadbalancer.server.port=80"
     networks:
       - wp-network
-
-volumes:
-  wp_data:
-    name: ${SITE_NAME}_wp_data
 
 networks:
   wp-network:
@@ -137,7 +132,7 @@ echo ""
 echo -e "  🌐 URL:          ${CYAN}http://${DOMAIN}${NC}"
 echo -e "  🔧 WP Admin:     ${CYAN}http://${DOMAIN}/wp-admin${NC}"
 echo -e "  🗄️  phpMyAdmin:   ${CYAN}http://pma.test${NC}"
-echo -e "  📁 Archivos:     ${CYAN}${SITE_DIR}/wp-content${NC}"
+echo -e "  📁 Archivos:     ${CYAN}${SITE_DIR}/wordpress${NC}"
 echo ""
 echo -e "  📊 Base de datos:"
 echo -e "     DB Name:      ${CYAN}${DB_NAME}${NC}"

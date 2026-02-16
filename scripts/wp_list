@@ -34,7 +34,7 @@ for site_dir in "$HOME/wp-sites"/*/; do
     db_name="wp_${site_name//-/_}"
 
     echo -e "  ${status}  ${CYAN}http://${site_name}.test${NC}"
-    echo -e "            DB: ${DIM}${db_name}${NC}  📁 ${DIM}${site_dir}wp-content/${NC}"
+    echo -e "            DB: ${DIM}${db_name}${NC}  📁 ${DIM}${site_dir}wordpress/${NC}"
     echo ""
 done
 
