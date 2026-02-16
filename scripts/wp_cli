@@ -1,0 +1,32 @@
+#!/bin/bash
+
+CYAN='\033[0;36m'
+YELLOW='\033[1;33m'
+RED='\033[0;31m'
+NC='\033[0m'
+
+if [ -z "$1" ]; then
+    echo -e "${RED}Error: Debes especificar el nombre del sitio${NC}"
+    echo -e "Uso: ${CYAN}wp_cli mi-sitio [comando wp]${NC}"
+    echo -e "Ejemplo: ${CYAN}wp_cli mi-sitio plugin list${NC}"
+    exit 1
+fi
+
+SITE_NAME="$1"
+shift
+CONTAINER="wp-${SITE_NAME}"
+
+if ! docker ps --format '{{.Names}}' | grep -q "^${CONTAINER}$"; then
+    echo -e "${RED}Error: El sitio '$SITE_NAME' no está corriendo${NC}"
+    exit 1
+fi
+
+# Verificar si wp-cli está instalado, si no, instalarlo temporalmente
+if ! docker exec $CONTAINER which wp > /dev/null 2>&1; then
+    echo -e "${YELLOW}Instalando WP-CLI temporalmente...${NC}"
+    docker exec $CONTAINER sh -c "curl -sL https://raw.githubusercontent.com/wp-cli/builds/gh-pages/phar/wp-cli.phar -o /tmp/wp-cli.phar && chmod +x /tmp/wp-cli.phar && mv /tmp/wp-cli.phar /usr/local/bin/wp" 2>/dev/null
+fi
+
+echo -e "${CYAN}Ejecutando WP-CLI en ${SITE_NAME}:${NC}"
+echo ""
+docker exec -it $CONTAINER wp "$@" --allow-root

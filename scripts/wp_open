@@ -1,0 +1,28 @@
+#!/bin/bash
+
+CYAN='\033[0;36m'
+GREEN='\033[0;32m'
+RED='\033[0;31m'
+NC='\033[0m'
+
+if [ -z "$1" ]; then
+    echo -e "${RED}Error: Debes especificar el nombre del sitio${NC}"
+    echo -e "Uso: ${CYAN}wp_open mi-sitio${NC}"
+    exit 1
+fi
+
+SITE_NAME="$1"
+URL="http://${SITE_NAME}.test"
+
+if command -v xdg-open &> /dev/null; then
+    xdg-open "$URL"
+elif command -v firefox &> /dev/null; then
+    firefox "$URL" &
+elif command -v google-chrome &> /dev/null; then
+    google-chrome "$URL" &
+else
+    echo -e "${CYAN}Abre esta URL en tu navegador: $URL${NC}"
+    exit 0
+fi
+
+echo -e "${GREEN}✅ Abriendo ${CYAN}$URL${NC}"

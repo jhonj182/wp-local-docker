@@ -1,0 +1,137 @@
+#!/bin/bash
+
+# =============================================
+# wp - Menú de gestión de WordPress local
+# =============================================
+
+CYAN='\033[0;36m'
+GREEN='\033[0;32m'
+YELLOW='\033[1;33m'
+DIM='\033[2m'
+NC='\033[0m'
+
+show_menu() {
+    echo ""
+    echo -e "${CYAN}╔══════════════════════════════════════════╗${NC}"
+    echo -e "${CYAN}║     🛠️  WordPress Local Development       ║${NC}"
+    echo -e "${CYAN}╠══════════════════════════════════════════╣${NC}"
+    echo -e "${CYAN}║${NC}                                          ${CYAN}║${NC}"
+    echo -e "${CYAN}║${NC}  ${GREEN}1)${NC} Crear nuevo sitio                     ${CYAN}║${NC}"
+    echo -e "${CYAN}║${NC}  ${GREEN}2)${NC} Eliminar sitio                         ${CYAN}║${NC}"
+    echo -e "${CYAN}║${NC}  ${GREEN}3)${NC} Listar sitios                          ${CYAN}║${NC}"
+    echo -e "${CYAN}║${NC}  ${GREEN}4)${NC} Iniciar sitio                          ${CYAN}║${NC}"
+    echo -e "${CYAN}║${NC}  ${GREEN}5)${NC} Detener sitio                          ${CYAN}║${NC}"
+    echo -e "${CYAN}║${NC}  ${GREEN}6)${NC} WP-CLI en sitio                        ${CYAN}║${NC}"
+    echo -e "${CYAN}║${NC}  ${GREEN}7)${NC} Abrir en navegador                     ${CYAN}║${NC}"
+    echo -e "${CYAN}║${NC}  ${GREEN}8)${NC} Salir                                  ${CYAN}║${NC}"
+    echo -e "${CYAN}║${NC}                                          ${CYAN}║${NC}"
+    echo -e "${CYAN}╚══════════════════════════════════════════╝${NC}"
+    echo ""
+}
+
+get_site_name() {
+    local action="$1"
+    echo -e "${YELLOW}Sitios disponibles:${NC}"
+    for site_dir in "$HOME/wp-sites"/*/; do
+        [ -f "$site_dir/docker-compose.yml" ] || continue
+        grep -q "^  traefik:" "$site_dir/docker-compose.yml" 2>/dev/null && continue
+        site_name=$(basename "$site_dir")
+        echo -e "  ${CYAN}$site_name${NC}"
+    done
+    echo ""
+    read -p "Nombre del sitio a $action: " site_name
+    echo "$site_name"
+}
+
+# Si se pasa un comando directamente, ejecutarlo
+if [ -n "$1" ]; then
+    case "$1" in
+        install|create|new)
+            shift
+            wp_install "$@"
+            ;;
+        remove|delete|rm)
+            shift
+            wp_remove "$@"
+            ;;
+        list|ls)
+            wp_list
+            ;;
+        start)
+            shift
+            wp_start "$@"
+            ;;
+        stop)
+            shift
+            wp_stop "$@"
+            ;;
+        cli)
+            shift
+            wp_cli "$@"
+            ;;
+        open)
+            shift
+            wp_open "$@"
+            ;;
+        *)
+            echo -e "${YELLOW}Uso: wp [comando] [argumentos]${NC}"
+            echo ""
+            echo "Comandos disponibles:"
+            echo "  install  - Crear nuevo sitio"
+            echo "  remove   - Eliminar sitio"
+            echo "  list     - Listar sitios"
+            echo "  start    - Iniciar sitio"
+            echo "  stop     - Detener sitio"
+            echo "  cli      - WP-CLI en sitio"
+            echo "  open     - Abrir en navegador"
+            ;;
+    esac
+    exit 0
+fi
+
+# Modo interactivo
+while true; do
+    show_menu
+    read -p "Selecciona una opción [1-8]: " option
+    echo ""
+
+    case $option in
+        1)
+            read -p "Nombre del nuevo sitio: " site_name
+            [ -n "$site_name" ] && wp_install "$site_name"
+            ;;
+        2)
+            site_name=$(get_site_name "eliminar")
+            [ -n "$site_name" ] && wp_remove "$site_name"
+            ;;
+        3)
+            wp_list
+            ;;
+        4)
+            site_name=$(get_site_name "iniciar")
+            [ -n "$site_name" ] && wp_start "$site_name"
+            ;;
+        5)
+            site_name=$(get_site_name "detener")
+            [ -n "$site_name" ] && wp_stop "$site_name"
+            ;;
+        6)
+            site_name=$(get_site_name "usar WP-CLI")
+            [ -n "$site_name" ] && wp_cli "$site_name"
+            ;;
+        7)
+            site_name=$(get_site_name "abrir")
+            [ -n "$site_name" ] && wp_open "$site_name"
+            ;;
+        8)
+            echo -e "${YELLOW}¡Hasta luego!${NC}"
+            exit 0
+            ;;
+        *)
+            echo -e "${YELLOW}Opción no válida${NC}"
+            ;;
+    esac
+
+    echo ""
+    read -p "Presiona Enter para continuar..."
+done
