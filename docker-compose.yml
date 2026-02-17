@@ -7,10 +7,17 @@ services:
       - "--providers.docker=true"
       - "--providers.docker.exposedbydefault=false"
       - "--entrypoints.web.address=:80"
+      - "--entrypoints.websecure.address=:443"
+      - "--entrypoints.web.http.redirections.entrypoint.to=websecure"
+      - "--entrypoints.web.http.redirections.entrypoint.scheme=https"
+      - "--providers.file.directory=/etc/traefik/certs"
+      - "--providers.file.watch=true"
     ports:
       - "80:80"
+      - "443:443"
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock:ro
+      - ./certs:/etc/traefik/certs:ro
     networks:
       - wp-network
 
@@ -22,10 +29,8 @@ services:
       MYSQL_ROOT_PASSWORD: wp_root_secret_2024
     volumes:
       - mariadb_data:/var/lib/mysql
-    # Descomenta las siguientes líneas si quieres exponer MariaDB externamente
-    # (solo si no tienes MariaDB/MySQL corriendo localmente en el puerto 3306)
     # ports:
-    #   - "3306:3306"
+    #   - "3306:3306"  # Comentado: MariaDB local ya usa este puerto
     networks:
       - wp-network
     healthcheck:
@@ -45,7 +50,8 @@ services:
     labels:
       - "traefik.enable=true"
       - "traefik.http.routers.phpmyadmin.rule=Host(`pma.test`)"
-      - "traefik.http.routers.phpmyadmin.entrypoints=web"
+      - "traefik.http.routers.phpmyadmin.entrypoints=websecure"
+      - "traefik.http.routers.phpmyadmin.tls=true"
       - "traefik.http.services.phpmyadmin.loadbalancer.server.port=80"
     networks:
       - wp-network
